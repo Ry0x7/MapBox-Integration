@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css' rel='stylesheet' />
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <Style>
+        body { margin: 0; padding: 0;}
+        #map { position: static; top: 0; bottom: 0; width: 100%; height: 100vh; }
+        #search { position: absolute; top: 10px; left: 10px; z-index: 1; width: 200px; }
+        #searchButton { position: absolute; top: 10px; left: 220px; z-index: 1; width: 100px; }
+        #title { position: absolute; top: 10px; left: 10px; z-index: 1; width: 100px;}
+    </Style>
+    </head>
+    <body>
+        <div>
+            <div id="title">
+                <h1>Ry Map Finder</h1>
+            </div>
+            <input type="text" id="search">
+            <div id="infobox"></div> 
+            <button id="searchButton">Search</button>
+            <div id='map'></div>
+        </div>
+    </body>
+    <footer>
+        <script>
+            mapboxgl.accessToken = 'Your API';
+            const search = document.getElementById('search');
+            const searchButton = document.getElementById('searchButton');
+            const map = new mapboxgl.Map({
+                container: 'map',
+                style: 'mapbox://styles/mapbox/streets-v12',
+                center: [-74.5, 40], 
+                zoom: 11.5
+            });
+            map.addControl(new mapboxgl.NavigationControl());
+
+            let marker = new mapboxgl.Marker();
+            let popup = new mapboxgl.Popup();
+
+            searchButton.addEventListener('click', function() {
+                const location = search.value;
+                fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${location}.json?access_token=${mapboxgl.accessToken}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const coordinates = data.features[0].geometry.coordinates;
+                        const placeName = data.features[0].place_name;
+
+                        marker.remove();
+                        popup.remove();
+
+                        marker = new mapboxgl.Marker().setLngLat(coordinates).addTo(map);
+                        popup = new mapboxgl.Popup().setLngLat(coordinates).setHTML(`<p>${placeName}</p>`).addTo(map);
+
+                        map.flyTo({
+                            center: coordinates,
+                            essential: true
+                        });
+                    });
+            });
+
+            map.on('click', function(e) {
+                const coordinates = [e.lngLat.lng, e.lngLat.lat];
+                fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${coordinates}.json?access_token=${mapboxgl.accessToken}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const placeName = data.features[0].place_name;
+
+                        marker.remove();
+                        popup.remove();
+
+                        marker = new mapboxgl.Marker().setLngLat(coordinates).addTo(map);
+                        popup = new mapboxgl.Popup().setLngLat(coordinates).setHTML(`<p>${placeName}</p>`).addTo(map);
+                    });
+            });
+        </script>
+    </footer>
+</html>
